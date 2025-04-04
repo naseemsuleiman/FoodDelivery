@@ -1,3 +1,26 @@
 @tailwind base; 
 @tailwind components; 
 @tailwind utilities;
+
+:root {
+  --primary-color: #FFFFF0; /* Ivory */
+  --secondary-color: #F5F5DC; /* Beige */
+  --accent-color: #8B4513; /* Saddle Brown */
+}
+
+body {
+  background-color: var(--primary-color);
+  color: #333;
+}
+
+.btn-primary {
+  @apply bg-[#8B4513] text-white hover:bg-[#A0522D] transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-[#F5F5DC] text-[#8B4513] hover:bg-[#E6E6D1] transition-colors duration-200;
+}
+
+.input-field {
+  @apply border border-[#8B4513] rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-[#8B4513];
+}

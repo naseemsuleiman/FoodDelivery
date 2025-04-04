@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Allow initialization of collections
+    match /{collection}/{document} {
+      allow create: if true; // Temporarily allow creation for initialization
+      allow read: if true;  // Temporarily allow reading for testing
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false;
+    }
+    
+    // Restaurants collection
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'restaurant_staff';
+    }
+    
+    // Menu items collection
+    match /menuItems/{menuItemId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'restaurant_staff';
+    }
+    
+    // Orders collection
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'restaurant_staff' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'delivery_driver'
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.userId) || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'restaurant_staff' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'delivery_driver'
+      );
+    }
+    
+    // Cart collection
+    match /cart/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+  }
+} 
