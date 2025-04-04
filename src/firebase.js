@@ -1,26 +1,25 @@
-// Import the necessary Firebase SDKs
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";  // Firebase Authentication
-import { getFirestore } from "firebase/firestore"; // Firestore Database
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB4HozTLzuhATRYl-P-6rSSTnafNTdkEX4",
-  authDomain: "food-delivery-app-db5aa.firebaseapp.com",
-  projectId: "food-delivery-app-db5aa",
-  storageBucket: "food-delivery-app-db5aa.firebasestorage.app",
-  messagingSenderId: "344148674980",
-  appId: "1:344148674980:web:059a1521894b989b925931"
+  apiKey: "AIzaSyD0ADDDu9VxQJR7qINUX8JWJMTL_UO4h04",
+  authDomain: "empolyeesystem.firebaseapp.com",
+  projectId: "empolyeesystem",
+  storageBucket: "empolyeesystem.firebasestorage.app",
+  messagingSenderId: "490333178500",
+  appId: "1:490333178500:web:0eaf0fc194dbc17c1410d1"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
 
-// Initialize Firebase Authentication
-const auth = getAuth(app);
-
-// Initialize Firestore Database
-const db = getFirestore(app);
-
-// Export the initialized services so they can be used in other parts of your app
-export { auth, db };
+export const getCurrentUser = () => {
+  return new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+};
