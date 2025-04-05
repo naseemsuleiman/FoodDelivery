@@ -1,128 +1,171 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { db, collection, addDoc, updateDoc, doc, onSnapshot } from './firebase';
+import { AuthProvider, useAuth } from './features/auth/authContext';
+import { CartProvider, useCart } from './features/cart/cartContext';
+import Toast from './components/Toast';
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import Profile from "./pages/Profile/Profile";
 import InitializeDB from "./pages/Test/InitializeDB";
-import Home from './Features/Home';
-import Menus from './Features/Menus';
-import Navbar from './Features/Navbar';
-import Cart from './Features/Cart';
-import Footer from './Features/Footer';
+import Home from "./pages/Home/Home.jsx";
+import Cart from "./pages/Cart/Cart";
+import Menus from "./pages/Menus/Menus";
+import TrackOrder from "./components/TrackOrder";
+import Checkout from "./pages/Checkout/Checkout";
+import Footer from "./components/Footer";
+import About from "./pages/About";
 
-function App() {
-  const [cart, setCart] = useState([]);
-  const [orderStatus, setOrderStatus] = useState(null);
-  const [driverInfo, setDriverInfo] = useState(null); 
-  const [driverLocation, setDriverLocation] = useState(null); 
+// Protected Route component
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFFFF0] via-[#F5F5DC] to-[#FAF0E6]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto"></div>
+          <p className="mt-4 text-[#8B4513]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const addToCart = (meal) => {
-    setCart([...cart, meal]);
-  };
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-  const removeFromCart = (idMeal) => {
-    setCart(cart.filter((meal) => meal.idMeal !== idMeal));
-  };
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/home" replace />;
+  }
 
-  const clearCart = () => {
-    setCart([]);
-  };
+  return children;
+};
 
-  const placeOrder = async () => {
-    if (cart.length === 0) return;
+// Public Route component
+const PublicRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFFFF0] via-[#F5F5DC] to-[#FAF0E6]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto"></div>
+          <p className="mt-4 text-[#8B4513]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-    try {
-      const orderRef = await addDoc(collection(db, 'orders'), {
-        idMeal: cart[0].idMeal,
-        status: 'Pending',
-        deliveryStatus: 'Assigned', 
-        driverId: 'driver_1', 
-        driverLocation: {
-          lat: 1.286389, 
-          lng: 36.817223
-        }
-      });
+  if (user) {
+    return <Navigate to="/home" replace />;
+  }
 
-      const driverRef = doc(db, 'drivers', 'driver_1');
-      const driverLocationRef = doc(db, 'orders', orderRef.id);
-      
-      setInterval(async () => {
-        const newLocation = {
-          lat: 1.287000 + Math.random() * 0.001, 
-          lng: 36.817500 + Math.random() * 0.001
-        };
-        
-        await updateDoc(driverRef, { location: newLocation });
-        await updateDoc(driverLocationRef, { driverLocation: newLocation });
-      }, 5000); 
+  return children;
+};
 
-    } catch (e) {
-      console.error('Error placing order: ', e);
-    }
-  };
+function AppRoutes() {
+  const { user, loading } = useAuth();
+  const { toast } = useCart();
+  const showFooter = !loading;
 
-  useEffect(() => {
-    const unsubscribeDriverLocation = onSnapshot(doc(db, 'drivers', 'driver_1'), (doc) => {
-      const driverData = doc.data();
-      setDriverLocation(driverData.location);
-    });
-
-    return () => unsubscribeDriverLocation();
-  }, []);
-
-  useEffect(() => {
-    const orderCollection = collection(db, 'orders');
-    const unsubscribeOrderStatus = onSnapshot(orderCollection, (snapshot) => {
-      snapshot.forEach((doc) => {
-        const order = doc.data();
-        if (order.idMeal === cart[0]?.idMeal) { 
-          setOrderStatus(order.deliveryStatus);
-          if (order.driverId) {
-            setDriverInfo(order.driverId);
-          }
-        }
-      });
-    });
-
-    return () => unsubscribeOrderStatus();
-  }, [cart]);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFFFF0] via-[#F5F5DC] to-[#FAF0E6]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto"></div>
+          <p className="mt-4 text-[#8B4513]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Router>
-      <Navbar cart={cart} />
+    <>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/test/init-db" element={<InitializeDB />} />
-        <Route path="/" element={<Home />} />
-        <Route path="/menus" element={<Menus addToCart={addToCart} />} />
-        <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} clearCart={clearCart} />} />
-      </Routes>
-      <Footer />
+        {/* Public Routes */}
+        <Route path="/login" element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        } />
+        <Route path="/signup" element={
+          <PublicRoute>
+            <SignUp />
+          </PublicRoute>
+        } />
+        <Route path="/forgot-password" element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        } />
+        
+        {/* Root path redirects to home if authenticated, login if not */}
+        <Route path="/" element={
+          user ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />
+        } />
+        
+        {/* Protected Routes */}
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/menus" element={
+          <ProtectedRoute>
+            <Menus />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/cart" element={
+          <ProtectedRoute>
+            <Cart />
+          </ProtectedRoute>
+        } />
 
-      {/* Order and Driver Status */}
-      {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-green-600 text-white p-4 text-center">
-          <p>Order Status: {orderStatus || 'Pending'}</p>
-          {driverInfo && <p>Driver: {driverInfo}</p>}
-          {driverLocation && (
-            <div>
-              <p>Driver Location: </p>
-              <p>Latitude: {driverLocation.lat.toFixed(5)}, Longitude: {driverLocation.lng.toFixed(5)}</p>
-            </div>
-          )}
-          <button
-            onClick={placeOrder}
-            className="px-4 py-2 bg-white text-green-600 rounded-lg mt-2"
-          >
-            Place Order
-          </button>
-        </div>
-      )}
+        <Route path="/checkout" element={
+          <ProtectedRoute>
+            <Checkout />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/track-orders" element={
+          <ProtectedRoute>
+            <TrackOrder />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/test/init-db" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <InitializeDB />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/about" element={
+          <About />
+        } />
+      </Routes>
+      {toast && <Toast message={toast} onClose={() => {}} />}
+      {showFooter && <Footer />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <CartProvider>
+          <AppRoutes />
+        </CartProvider>
+      </AuthProvider>
     </Router>
   );
 }
