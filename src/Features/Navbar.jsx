@@ -18,11 +18,16 @@ const Navbar = ({ cartCount }) => {
           Sign Up
         </button>
 
-        
+      
+        <Link
+          to="/dashboard"
+          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg"
+        >
+          Dashboard
+        </Link>
+
         <Link to="/cart" className="relative">
           <ShoppingCartIcon className="h-6 w-6 text-gray-700 hover:text-green-600" />
-          
-          
           {cartCount > 0 && (
             <span className="absolute top-0 right-0 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {cartCount}
