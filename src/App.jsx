@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { db, collection, addDoc, updateDoc, doc, onSnapshot } from './firebase'; // Firebase imports
+import { db } from './firebase';
+import { collection, addDoc, updateDoc, doc, onSnapshot, setDoc } from 'firebase/firestore';
 import Home from './Features/Home';
 import Menus from './Features/Menus';
 import Navbar from './Features/Navbar';
 import Cart from './Features/Cart';
-import Footer from './Features/Footer';
+import Dashboard from './Dashboard/Dashboard';
+import CalendarComponent from './Features/Calendar';
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -13,6 +15,13 @@ function App() {
   const [driverInfo, setDriverInfo] = useState(null); 
   const [driverLocation, setDriverLocation] = useState(null); 
 
+  const initializeDriver = async () => {
+    const driverRef = doc(db, 'drivers', 'driver_1');
+    await setDoc(driverRef, {
+      location: { lat: 1.286389, lng: 36.817223 }, // Default location
+    });
+  };
+  initializeDriver();
   
   const addToCart = (meal) => {
     setCart([...cart, meal]);
@@ -68,7 +77,11 @@ function App() {
   useEffect(() => {
     const unsubscribeDriverLocation = onSnapshot(doc(db, 'drivers', 'driver_1'), (doc) => {
       const driverData = doc.data();
-      setDriverLocation(driverData.location);
+      if (driverData && driverData.location) {
+        setDriverLocation(driverData.location);
+      } else {
+        console.warn('Driver location data is missing or undefined');
+      }
     });
 
     return () => unsubscribeDriverLocation();
@@ -99,8 +112,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/menus" element={<Menus addToCart={addToCart} />} />
         <Route path="/cart" element={<Cart cart={cart} removeFromCart={removeFromCart} clearCart={clearCart} />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<CalendarComponent />} /> 
       </Routes>
-      <Footer />
+  
 
       {/* Order and Driver Status */}
       {cart.length > 0 && (

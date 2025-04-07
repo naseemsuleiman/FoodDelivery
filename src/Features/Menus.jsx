@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { getDatabase, ref, set } from "firebase/database";
-import { database } from './firebase'; 
+// import { database } from './firebase'; 
 
 function Menus({ addToCart }) {
     const [meals, setMeals] = useState([]);
